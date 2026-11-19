@@ -26,7 +26,17 @@ export class MiscFileStructure extends ModuleStructure {
 
     public async getSpecModel(): Promise<Module[]> {
         if (this.resolvedModels == null) {
-            this.resolvedModels = await this.recursiveModuleScan(this.containerDirectory)
+            try {
+                this.resolvedModels = await this.recursiveModuleScan(this.containerDirectory)
+            } catch (err) {
+                // Git does not preserve an empty files directory. Treat an absent
+                // container as empty, but keep errors within existing trees visible.
+                const error = err as NodeJS.ErrnoException
+                if (error.code !== 'ENOENT' || error.path !== this.containerDirectory) {
+                    throw err
+                }
+                this.resolvedModels = []
+            }
         }
 
         return this.resolvedModels
